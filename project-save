@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+import argparse
+import pathlib
+import os, stat, sys
+import subprocess
+import json
+import jq
+from jinja2 import Environment, FileSystemLoader
+
+parser = argparse.ArgumentParser(description='i3 workspace project saver')
+parser.add_argument("name", help="name of project")
+parser.add_argument("-w", "--workspace", help="workspace to initialize to")
+parser.add_argument("-v", "--verbose", action="store_true",
+                    help="verbose logging")
+parser.add_argument("-o", "--override", action="store_true",
+                    help="force override of files")
+args = parser.parse_args()
+
+# Reconfigure or pull from env variable if you'd like
+projects_dir = os.path.join(pathlib.Path.home(), ".i3", "projects")
+template_filename = os.path.join("template.txt")
+
+ws_path = os.path.join(projects_dir, "project-%s.json" % args.name)
+script_path = os.path.join(projects_dir, "project-%s" % args.name)
+
+if (args.verbose):
+    print("Project name: %s" % args.name)
+    print("Script template: %s" % template_filename)
+    print("Target workspace: %s" % args.workspace)
+    print("Force override of files: %s" % args.override)
+    print("Projects directory: %s" % projects_dir)
+    print("Workspace path: %s" % ws_path)
+    print("Script path: %s" % script_path)
+
+
+if (os.path.isfile(ws_path) and not args.override):
+    print("File exists at %s and we're not set to override. Exiting." % ws_path)
+    sys.exit(10)
+
+if (os.path.isfile(script_path) and not args.override):
+    print("File exists at %s and we're not set to override. Exiting." % script_path)
+    sys.exit(11)
+
+
+result = subprocess.run(
+    ["i3-msg", "-t", "get_workspaces"], capture_output=True)
+
+workspaces = json.loads(result.stdout)
+
+if (args.verbose):
+    print(json.dumps(workspaces, indent=2))
+
+focused_workspace = jq.compile(
+    ".[] | select(.focused==true).name").input(workspaces).first()
+
+if (args.verbose):
+    print("Focused workspace: %s" % focused_workspace)
+
+result = subprocess.run(
+    ["i3-save-tree", "--workspace", focused_workspace], stdout=subprocess.PIPE, encoding="utf-8")
+
+if (args.verbose):
+    print(result.stdout)
+
+with open(ws_path, mode="w") as ws:
+    ws.write("// For stacks and splits, see: https://i3wm.org/docs/layout-saving.html\n")
+    ws.write(str(result.stdout))
+
+
+environment = Environment(loader=FileSystemLoader(projects_dir))
+template = environment.get_template(template_filename)
+
+
+content = template.render(
+    workspace=args.workspace,
+    layout=ws_path
+)
+
+if (args.verbose):
+    print(content)
+
+with open(script_path, mode="w") as script:
+    script.write(content)
+
+os.chmod(script_path, stat.S_IRWXU)

@@ -1,0 +1,5 @@
+#!/bin/sh
+
+i3-msg "workspace {{ workspace }}; [workspace={{ workspace }}] kill; append_layout {{ layout }}"
+
+# Add shell commands to open applications here!
