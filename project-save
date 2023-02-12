@@ -17,7 +17,7 @@ parser.add_argument("-o", "--override", action="store_true",
 args = parser.parse_args()
 
 # Reconfigure or pull from env variable if you'd like
-projects_dir = os.path.join(pathlib.Path.home(), ".i3", "projects")
+projects_dir = os.path.join(pathlib.Path.home(), "bin")
 template_filename = os.path.join("template.txt")
 
 ws_path = os.path.join(projects_dir, "project-%s.json" % args.name)
