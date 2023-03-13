@@ -3,3 +3,7 @@
 i3-msg "workspace {{ workspace }}; [workspace={{ workspace }}] kill; append_layout {{ layout }}"
 
 # Add shell commands to open applications here!
+# Examples:
+# gnome-terminal --working-directory=$HOME/src/config &
+# code ~/src/config/config.code-workspace &
+# google-chrome --new-window google.com &
